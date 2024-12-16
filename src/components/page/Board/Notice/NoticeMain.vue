@@ -1,6 +1,6 @@
 <template>
     <div class="divNoticeList">
-        현재 페이지: 0 총 개수: 0
+        현재 페이지: {{ currentPage }} 총 개수: {{ noticeCnt }}
         <table>
             <colgroup>
                 <col width="10%" />
@@ -18,8 +18,16 @@
                 </tr>
             </thead>
             <tbody>
-                <template>
-                    <template>
+                <template v-if="noticeList">
+                    <template v-if="noticeCnt > 0">
+                        <tr v-for="notice in noticeList" :key="notice.noticeIdx">
+                            <td>{{ notice.noticeIdx }}</td>
+                            <td>{{ notice.title }}</td>
+                            <td>{{ notice.createdDate.substr(0, 10) }}</td>
+                            <td>{{ notice.author }}</td>
+                        </tr>
+                    </template>
+                    <template v-else>
                         <tr>
                             <td colspan="7">일치하는 검색 결과가 없습니다</td>
                         </tr>
@@ -27,10 +35,50 @@
                 </template>
             </tbody>
         </table>
+        <Pagination
+        :totalItems="noticeCnt || 0"
+        :items-per-page="5"
+        :max-pages-shown="5"
+        :onClick="searchList"
+        v-model="currentPage"></Pagination>
     </div>
 </template>
 
-<script setup></script>
+<script setup>
+import axios from 'axios';
+import { onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import Pagination from '../../../common/Pagination.vue';
+
+const route = useRoute();   // NoticeSearch에서 넘겨주는 데이터 받아오기
+const noticeList = ref();   // 서버로부터 받아온 데이터
+const noticeCnt = ref(0);
+const currentPage = ref(1);
+
+
+
+// 받아온 데이터 서버로 넘기기
+const searchList = () => {
+    const param = new URLSearchParams({
+        searchTitle: route.query.searchTitle || '',
+        searchStDate: route.query.searchStDate || '',
+        searchEdDate: route.query.searchEdDate || '',
+        currentPage: currentPage.value,
+        pageSize: 5,
+    });
+    axios.post('/api/board/noticeListJson.do', param).then((res) => {
+        noticeList.value = res.data.notice;
+        noticeCnt.value = res.data.noticeCnt;
+    });
+};
+
+//watch(route, () => console.log(route.query));
+watch(route, searchList);
+
+onMounted(() => {
+    searchList();
+});
+</script>
 
 <style lang="scss" scoped>
 table {

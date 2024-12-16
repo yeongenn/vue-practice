@@ -32,8 +32,8 @@ const handlerSearch = () => {
     //alert(keyword.value + searchStartDate.value + searchEndDate.value);
     const query = [];   // url 파라미터 쿼리
     !keyword.value || query.push(`searchTitle=${keyword.value}`);
-    !searchStartDate.value || query.push(`searchStartDate=${searchStartDate.value}`);
-    !searchEndDate.value || query.push(`searchEndDate=${searchEndDate.value}`);
+    !searchStartDate.value || query.push(`searchStDate=${searchStartDate.value}`);
+    !searchEndDate.value || query.push(`searchEdDate=${searchEndDate.value}`);
     //console.log(query);
     const queryString = query.length > 0 ? `?${query.join('&')}` : '';
     //console.log(queryString);
