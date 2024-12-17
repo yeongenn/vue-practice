@@ -77,7 +77,11 @@ const handlerSaveBtn = () => {
 const searchDetail = () => {
     axios.post(`/api/board/noticeDetailBody.do`, { noticeSeq: props.idx }).then((res) => {
         noticeDetail.value = res.data.detail;
+        if(noticeDetail.value.fileExt === 'jpg' || noticeDetail.value.fileExt === 'gif' || noticeDetail.value.fileExt === 'png'){
+        getFileImage();
+    }
     });
+    
 };
 
 const handlerUpdateBtn = () => {
@@ -116,6 +120,26 @@ const handlerFile = (e) => {
     fileData.value = fileInfo[0];
 
 };
+
+// 게시글 상세보기 시 이미지 파일 보이기
+const getFileImage = () => {
+    let param = new URLSearchParams();
+    param.append('noticeSeq', props.idx);   // 파라미터로 시퀀스 넣어주기
+    const postAction = {
+        url: `/api/board/noticeDownload.do`,
+        method: 'POST',
+        data: param,
+        responseType: 'blob',   // 
+    };
+     
+    axios(postAction).then((res) => {
+        //console.log(res);
+        const url = window.URL.createObjectURL(new Blob([res.data]));
+        //console.log(url);
+        imageUrl.value = url;   // v-bind로 img 태그 안에 url 추가
+    })
+    
+}
 
 onMounted(() => {
     // console.log(props.idx);
