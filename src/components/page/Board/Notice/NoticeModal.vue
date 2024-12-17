@@ -12,12 +12,14 @@
                 </label>
                 파일 :<input type="file" style="display: none" id="fileInput" @change="handlerFile" />
                 <label class="img-label" htmlFor="fileInput"> 파일 첨부하기 </label>
-                <div v-if="imageUrl">
+                <div @click="fileDownload">
+                    <div v-if="imageUrl">
                     <label>파일 미리보기</label>
                     <img :src="imageUrl" />
                 </div>
                 <div v-else>
                     <label>파일명</label>
+                </div>
                 </div>
                 <div class="button-box">
                     <button @click="props.idx ? handlerUpdateBtn() : handlerSaveBtn()">{{ props.idx ? '수정' : '저장' }}</button>
@@ -56,7 +58,7 @@ const handlerSaveBtn = () => {
         loginId: userInfo.user.loginId
     };
     const formData = new FormData();
-    if(formData.value) formData.append('file', formData.value);
+    if(fileData.value) formData.append('file', fileData.value);
     formData.append(
             'text', 
             new Blob([JSON.stringify(textData)], {
@@ -77,7 +79,12 @@ const handlerSaveBtn = () => {
 const searchDetail = () => {
     axios.post(`/api/board/noticeDetailBody.do`, { noticeSeq: props.idx }).then((res) => {
         noticeDetail.value = res.data.detail;
-        if(noticeDetail.value.fileExt === 'jpg' || noticeDetail.value.fileExt === 'gif' || noticeDetail.value.fileExt === 'png'){
+        if(
+            noticeDetail.value.fileExt === 'jpg' || 
+            noticeDetail.value.fileExt === 'gif' || 
+            noticeDetail.value.fileExt === 'png' ||
+            noticeDetail.value.fileExt === 'webp'
+        ){
         getFileImage();
     }
     });
@@ -87,10 +94,21 @@ const searchDetail = () => {
 const handlerUpdateBtn = () => {
     const textData = {
         title: noticeDetail.value.title,
-        context: noticeDetail.value.content,
+        content: noticeDetail.value.content,
         noticeSeq: props.idx,
     };
-    axios.post(`/api/board/noticeUpdateBody.do`, textData).then((res) => {
+    
+    const formData = new FormData();
+    if(fileData.value) formData.append('file', fileData.value);
+    formData.append(
+            'text', 
+            new Blob([JSON.stringify(textData)], {
+                type: 'application/json',
+        })
+    );
+
+    //axios.post(`/api/board/noticeUpdateBody.do`, textData).then((res) => {
+    axios.post(`/api/board/noticeUpdateFileForm.do`, formData).then((res) => {
         if(res.data.result === 'success'){
             modalState.setModalState();
             emit('postSuccess');
@@ -113,7 +131,7 @@ const handlerFile = (e) => {
 
     const fileInfoSplit = fileInfo[0].name.split('.');  // 파일명, 확장자 분리
     const fileExtension = fileInfoSplit[1].toLowerCase();    // 확장자명 가져오기
-    if(fileExtension === 'jpg' || fileExtension === 'gif' || fileExtension === 'png'){
+    if(fileExtension === 'jpg' || fileExtension === 'gif' || fileExtension === 'png' || fileExtension === 'webp'){
         //console.log(URL.createObjectURL(fileInfo[0]));
         imageUrl.value = URL.createObjectURL(fileInfo[0]);
     }
@@ -139,7 +157,28 @@ const getFileImage = () => {
         imageUrl.value = url;   // v-bind로 img 태그 안에 url 추가
     })
     
-}
+};
+
+// 이미지 클릭 시 파일 다운로드
+const fileDownload = () => {
+    let param = new URLSearchParams();
+    param.append('noticeSeq', props.idx);   // 파라미터로 시퀀스 넣어주기
+    const postAction = {
+        url: `/api/board/noticeDownload.do`,
+        method: 'POST',
+        data: param,
+        responseType: 'blob',   // 
+    };
+    axios(postAction).then((res) => {
+        const url = window.URL.createObjectURL(new Blob([res.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', noticeDetail.value.fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();  // 다운로드 후에는 a태그 삭제해서 누수 예방
+    })
+};
 
 onMounted(() => {
     // console.log(props.idx);
