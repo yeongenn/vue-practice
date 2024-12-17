@@ -4,7 +4,7 @@
         <input type="date" v-model="searchStartDate"/>
         <input type="date" v-model="searchEndDate"/>
         <button @click="handlerSearch">검색</button>
-        <button>신규등록</button>
+        <button @click="handlerModal">신규등록</button>
     </div>
 </template>
 
@@ -12,11 +12,14 @@
 <script setup>
 import router from '@/router';
 import { watchEffect } from 'vue';
+import { useModalStore } from '../../../../stores/modalState';
 
 const keyword = ref('');    // 이 값이 변경되면 화면 리렌더링
 const searchStartDate = ref('');
 const searchEndDate = ref('');
 const other = 1;    // 반응형 객체가 아닌 경우~
+
+const modalState = useModalStore();
 
 // // watch - 반응형 객체의 값이 변경되면 이하 함수가 실행된다
 // // 첫번째 인자로는 반응형 객체가 들어가야한다 - 반응형 객체가 아닌 경우에는 함수로 넣어야
@@ -40,6 +43,10 @@ const handlerSearch = () => {
 
     router.push(queryString);
 };
+
+const handlerModal = () => {
+    modalState.setModalState();
+}
 
 // watchEffect - 인자로 받는 함수 내에 반응형 객체의 값이 변경되면 함수 수행
 // 아래 코드 설명 - ref 같은 반응형 객체는 없다. 새로고침 누르면 최초에 한번 실행되는 코드

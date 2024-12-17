@@ -1,11 +1,14 @@
 <template>
+    <!-- teleport
+    컴포넌트 템플릿의 일부를 해당 컴포넌트의 DOM 계층 외부의 DOM 노드로 
+    이동할 수 있게 해주는 빌트인 컴포넌트 -->
     <teleport to="body">
         <div class="backdrop">
             <div class="container">
-                <label> 제목 :<input type="text" /> </label>
+                <label> 제목 :<input type="text" v-model="noticeDetail.title" /> </label>
                 <label>
                     내용 :
-                    <input type="text" />
+                    <input type="text" v-model="noticeDetail.content" />
                 </label>
                 파일 :<input type="file" style="display: none" id="fileInput" />
                 <label class="img-label" htmlFor="fileInput"> 파일 첨부하기 </label>
@@ -13,15 +16,84 @@
                     <label>파일명</label>
                 </div>
                 <div class="button-box">
-                    <button>삭제</button>
-                    <button>나가기</button>
+                    <button @click="props.idx ? handlerUpdateBtn() : handlerSaveBtn()">{{ props.idx ? '수정' : '저장' }}</button>
+                    <button @click="handlerDeleteBtn"  v-if="props.idx">삭제</button>
+                    <button @click="handlerModal">나가기</button>
                 </div>
             </div>
         </div>
     </teleport>
 </template>
 
-<script setup></script>
+<script setup>
+import axios from 'axios';
+import { useModalStore } from '../../../../stores/modalState';
+import { useUserInfo } from '../../../../stores/userInfo';
+import { onMounted, onUnmounted } from 'vue';
+
+const modalState = useModalStore();
+const noticeDetail = ref({});
+const userInfo = useUserInfo();
+const emit = defineEmits(['postSuccess', 'modalClose']); // 자식 컴포넌트에서 부모 컴포넌트의 동작을 유도할 수 있다
+const props = defineProps(['idx']);
+
+const handlerModal = () => {
+    modalState.setModalState();
+}
+
+const handlerSaveBtn = () => {
+    const textData = {
+        // title: noticeDetail.value.title,
+        // context: noticeDetail.value.context,
+        ...noticeDetail.value,
+        loginId: userInfo.user.loginId
+    };
+    axios.post(`/api/board/noticeSaveBody.do`, textData).then((res) => {
+        if(res.data.result === 'success'){
+            modalState.setModalState();
+            emit('postSuccess');
+        }
+    });
+    console.log(textData);
+};
+
+const searchDetail = () => {
+    axios.post(`/api/board/noticeDetailBody.do`, { noticeSeq: props.idx }).then((res) => {
+        noticeDetail.value = res.data.detail;
+    });
+};
+
+const handlerUpdateBtn = () => {
+    const textData = {
+        title: noticeDetail.value.title,
+        context: noticeDetail.value.content,
+        noticeSeq: props.idx,
+    };
+    axios.post(`/api/board/noticeUpdateBody.do`, textData).then((res) => {
+        if(res.data.result === 'success'){
+            modalState.setModalState();
+            emit('postSuccess');
+        }
+    });
+};
+
+const handlerDeleteBtn = () => {
+    axios.post(`/api/board/noticeDeleteBody.do`, { noticeSeq: props.idx }).then((res) => {
+        if(res.data.result === 'success'){
+            modalState.setModalState();
+            emit('postSuccess');
+        }
+    });
+};
+
+onMounted(() => {
+    // console.log(props.idx);
+    // searchDetail();
+    props.idx && searchDetail();    // 신규 등록일 때는 api 호출 X
+});
+
+onUnmounted(() => emit('modalClose'));
+</script>
 
 <style lang="scss" scoped>
 .backdrop {

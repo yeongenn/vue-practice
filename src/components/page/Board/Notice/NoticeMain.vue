@@ -1,5 +1,12 @@
 <template>
     <div class="divNoticeList">
+        <!-- Modal의 경우에는 v-show 보다 v-if가 더 적합해보인다 -->
+        <NoticeModal 
+            v-if="modalState.modalState" 
+            @postSuccess="searchList" 
+            @modal-close="() => (noticeIdx = 0)" 
+            :idx="noticeIdx"
+        />
         현재 페이지: {{ currentPage }} 총 개수: {{ noticeCnt }}
         <table>
             <colgroup>
@@ -20,7 +27,7 @@
             <tbody>
                 <template v-if="noticeList">
                     <template v-if="noticeCnt > 0">
-                        <tr v-for="notice in noticeList" :key="notice.noticeIdx">
+                        <tr v-for="notice in noticeList" :key="notice.noticeIdx" @click="handlerModal(notice.noticeIdx)">
                             <td>{{ notice.noticeIdx }}</td>
                             <td>{{ notice.title }}</td>
                             <td>{{ notice.createdDate.substr(0, 10) }}</td>
@@ -49,13 +56,15 @@ import axios from 'axios';
 import { onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import Pagination from '../../../common/Pagination.vue';
+import { useModalStore } from '../../../../stores/modalState';
 
 const route = useRoute();   // NoticeSearch에서 넘겨주는 데이터 받아오기
 const noticeList = ref();   // 서버로부터 받아온 데이터
 const noticeCnt = ref(0);
 const currentPage = ref(1);
-
-
+//const modalValue = ref(false);  // 
+const modalState = useModalStore();
+const noticeIdx = ref(0);
 
 // 받아온 데이터 서버로 넘기기
 const searchList = () => {
@@ -70,6 +79,14 @@ const searchList = () => {
         noticeList.value = res.data.notice;
         noticeCnt.value = res.data.noticeCnt;
     });
+};
+
+const handlerModal = (idx) => {
+    //modalState.modalState = !modalState.modalState;
+    console.log(idx);
+    noticeIdx.value = idx;
+    modalState.setModalState();
+    //console.log(modalState.modalState);
 };
 
 //watch(route, () => console.log(route.query));
