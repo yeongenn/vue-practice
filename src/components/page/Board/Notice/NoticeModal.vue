@@ -10,9 +10,13 @@
                     내용 :
                     <input type="text" v-model="noticeDetail.content" />
                 </label>
-                파일 :<input type="file" style="display: none" id="fileInput" />
+                파일 :<input type="file" style="display: none" id="fileInput" @change="handlerFile" />
                 <label class="img-label" htmlFor="fileInput"> 파일 첨부하기 </label>
-                <div>
+                <div v-if="imageUrl">
+                    <label>파일 미리보기</label>
+                    <img :src="imageUrl" />
+                </div>
+                <div v-else>
                     <label>파일명</label>
                 </div>
                 <div class="button-box">
@@ -31,11 +35,14 @@ import { useModalStore } from '../../../../stores/modalState';
 import { useUserInfo } from '../../../../stores/userInfo';
 import { onMounted, onUnmounted } from 'vue';
 
+const emit = defineEmits(['postSuccess', 'modalClose']); // 자식 컴포넌트에서 부모 컴포넌트의 동작을 유도할 수 있다
+const props = defineProps(['idx']);
+
 const modalState = useModalStore();
 const noticeDetail = ref({});
 const userInfo = useUserInfo();
-const emit = defineEmits(['postSuccess', 'modalClose']); // 자식 컴포넌트에서 부모 컴포넌트의 동작을 유도할 수 있다
-const props = defineProps(['idx']);
+const imageUrl = ref('');   // 미리보기용
+const fileData = ref('');   // DB에 저장할 파일 데이터
 
 const handlerModal = () => {
     modalState.setModalState();
@@ -48,7 +55,17 @@ const handlerSaveBtn = () => {
         ...noticeDetail.value,
         loginId: userInfo.user.loginId
     };
-    axios.post(`/api/board/noticeSaveBody.do`, textData).then((res) => {
+    const formData = new FormData();
+    if(formData.value) formData.append('file', formData.value);
+    formData.append(
+            'text', 
+            new Blob([JSON.stringify(textData)], {
+                type: 'application/json',
+        })
+    );
+    
+    //axios.post(`/api/board/noticeSaveBody.do`, textData).then((res) => {
+    axios.post(`/api/board/noticeFileSaveForm.do`, formData).then((res) => {
         if(res.data.result === 'success'){
             modalState.setModalState();
             emit('postSuccess');
@@ -84,6 +101,20 @@ const handlerDeleteBtn = () => {
             emit('postSuccess');
         }
     });
+};
+
+const handlerFile = (e) => {
+    const fileInfo = e.target.files;
+    //console.log(fileInfo);
+
+    const fileInfoSplit = fileInfo[0].name.split('.');  // 파일명, 확장자 분리
+    const fileExtension = fileInfoSplit[1].toLowerCase();    // 확장자명 가져오기
+    if(fileExtension === 'jpg' || fileExtension === 'gif' || fileExtension === 'png'){
+        //console.log(URL.createObjectURL(fileInfo[0]));
+        imageUrl.value = URL.createObjectURL(fileInfo[0]);
+    }
+    fileData.value = fileInfo[0];
+
 };
 
 onMounted(() => {
