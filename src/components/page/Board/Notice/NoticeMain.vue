@@ -50,7 +50,8 @@
         :onClick="searchList"
         v-model="currentPage"></Pagination>
     </div>
-    <router></router>
+    <!-- 중첩라우터를 사용하면 router-view 부분에 상세보기 창이 뜨게 된다 -->
+    <router-view></router-view>
 </template>
 
 <script setup>
@@ -99,6 +100,7 @@ const { data : noticeList, isLoading, refetch, isSuccess, isError } = useQuery({
     queryKey: ['noticeList', injectedValue, currentPage],
     //queryKey: ['noticeList'],
     queryFn: searchList,
+    staleTime: 60 * 1000,   // 예를 들어 상세보기에서 뒤로가기 눌렀을 때 서버에 굳이 다녀오고 싶지 않다
 });
 
 // const handlerModal = (idx) => {
@@ -109,16 +111,16 @@ const { data : noticeList, isLoading, refetch, isSuccess, isError } = useQuery({
 //     //console.log(modalState.modalState);
 // };
 
-// const handlerDetail = (param) => { // 숫자를 넘겨줄 때는 String 타입으로 변환해서 넘겨야한다
-//     router.push({
-//         name: 'noticeDetail',
-//         params: { idx: param },
-//     }) 
-// };
+const handlerDetail = (param) => { // 숫자를 넘겨줄 때는 String 타입으로 변환해서 넘겨야한다
+    router.push({
+        name: 'noticeDetail',
+        params: { idx: param },
+    }) 
+};
 
-const handlerDetail = (idx) => {
-    router.push(`${idx}`);
-}
+// const handlerDetail = (idx) => {
+//     router.push(`${idx}`);
+// }
 
 
 //watch(route, () => console.log(route.query));

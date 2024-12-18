@@ -3,12 +3,13 @@
     컴포넌트 템플릿의 일부를 해당 컴포넌트의 DOM 계층 외부의 DOM 노드로 
     이동할 수 있게 해주는 빌트인 컴포넌트 -->
         <div>
-            <div>
+            <div v-if="isLoading">...로딩 중... 기다려주세요...</div>
+            <div v-else>
                 <ContextBox>공지사항 상세조회</ContextBox>
-                <label> 제목 :<input type="text"/> </label>
+                <label> 제목 :<input type="text" v-model="detailValue.title"/> </label>
                 <label>
                     내용 :
-                    <input type="text"/>
+                    <input type="text" v-model="detailValue.content"/>
                 </label>
                 파일 :<input type="file" style="display: none" id="fileInput" @change="handlerFile" />
                 <label class="img-label" htmlFor="fileInput"> 파일 첨부하기 </label>
@@ -22,170 +23,73 @@
                 </div>
                 </div>
                 <div class="button-box">
-                    <button>저장</button>
+                    <button @click="handlerUpdateBtn">저장</button>
                     <button>삭제</button>
-                    <button>나가기</button>
+                    <!-- $ 사용하면 import 없이 tmeplate 안에서 사용 가능 -->
+                    <button @click="$router.go(-1)">뒤로가기</button>
                 </div>
             </div>
         </div>
 </template>
 
 <script setup>
+import { useQuery } from '@tanstack/vue-query';
 import axios from 'axios';
-import { useModalStore } from '../../../../stores/modalState';
-import { useUserInfo } from '../../../../stores/userInfo';
-import { onMounted, onUnmounted } from 'vue';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 
-const emit = defineEmits(['postSuccess', 'modalClose']); // 자식 컴포넌트에서 부모 컴포넌트의 동작을 유도할 수 있다
-const props = defineProps(['idx']);
+const { params } = useRoute();
+const detailValue = ref({});
 
-const modalState = useModalStore();
-const noticeDetail = ref({});
-const userInfo = useUserInfo();
-const imageUrl = ref('');   // 미리보기용
-const fileData = ref('');   // DB에 저장할 파일 데이터
-
-const handlerModal = () => {
-    modalState.setModalState();
-}
-
-const handlerSaveBtn = () => {
-    const textData = {
-        // title: noticeDetail.value.title,
-        // context: noticeDetail.value.context,
-        ...noticeDetail.value,
-        loginId: userInfo.user.loginId
-    };
-    const formData = new FormData();
-    if(fileData.value) formData.append('file', fileData.value);
-    formData.append(
-            'text', 
-            new Blob([JSON.stringify(textData)], {
-                type: 'application/json',
-        })
-    );
-    
-    //axios.post(`/api/board/noticeSaveBody.do`, textData).then((res) => {
-    axios.post(`/api/board/noticeFileSaveForm.do`, formData).then((res) => {
-        if(res.data.result === 'success'){
-            modalState.setModalState();
-            emit('postSuccess');
-        }
-    });
-    console.log(textData);
+const searchDetail = async () => {
+    const result = await axios.post(`/api/board/noticeDetailBody.do`, { noticeSeq: params.idx });
+    return result.data;
 };
 
-const searchDetail = () => {
-    axios.post(`/api/board/noticeDetailBody.do`, { noticeSeq: props.idx }).then((res) => {
-        noticeDetail.value = res.data.detail;
-        if(
-            noticeDetail.value.fileExt === 'jpg' || 
-            noticeDetail.value.fileExt === 'gif' || 
-            noticeDetail.value.fileExt === 'png' ||
-            noticeDetail.value.fileExt === 'webp'
-        ){
-        getFileImage();
+const { data : noticeDetail, isLoading, isSuccess } = useQuery({
+    queryKey: ['detailList'],
+    queryFn: searchDetail,
+})
+
+watchEffect(() => {
+    if(isSuccess.value && noticeDetail.value){
+        //detailValue.value = toRaw(noticeDetail.value.detail); // proxy로 감싸진 원본 객체 꺼내오기
+        detailValue.value = { ...noticeDetail.value.detail }; // 이렇게 사용도 가능하다
     }
-    });
-    
-};
+});
 
 const handlerUpdateBtn = () => {
     const textData = {
-        title: noticeDetail.value.title,
-        content: noticeDetail.value.content,
-        noticeSeq: props.idx,
+        title: noticeDetail.value.detail.title,
+        content: noticeDetail.value.detail.content,
+        noticeSeq: params.idx,
     };
+
+    //console.log(textData);  // useQuery 사용해서 받아온 데이터는 기본적으로  readonly
+    console.log(detailValue.value);
     
-    const formData = new FormData();
-    if(fileData.value) formData.append('file', fileData.value);
-    formData.append(
-            'text', 
-            new Blob([JSON.stringify(textData)], {
-                type: 'application/json',
-        })
-    );
+    // const formData = new FormData();
+    // if(fileData.value) formData.append('file', fileData.value);
+    // formData.append(
+    //         'text', 
+    //         new Blob([JSON.stringify(textData)], {
+    //             type: 'application/json',
+    //     })
+    // );
 
-    //axios.post(`/api/board/noticeUpdateBody.do`, textData).then((res) => {
-    axios.post(`/api/board/noticeUpdateFileForm.do`, formData).then((res) => {
-        if(res.data.result === 'success'){
-            modalState.setModalState();
-            emit('postSuccess');
-        }
-    });
+    // //axios.post(`/api/board/noticeUpdateBody.do`, textData).then((res) => {
+    // axios.post(`/api/board/noticeUpdateFileForm.do`, formData).then((res) => {
+    //     if(res.data.result === 'success'){
+    //         modalState.setModalState();
+    //         emit('postSuccess');
+    //     }
+    // });
 };
 
-const handlerDeleteBtn = () => {
-    axios.post(`/api/board/noticeDeleteBody.do`, { noticeSeq: props.idx }).then((res) => {
-        if(res.data.result === 'success'){
-            modalState.setModalState();
-            emit('postSuccess');
-        }
-    });
-};
+// useQuery 사용했더니 수정값이 안 넘어가~~~
+// 방법 1.
+//const computedValue = computed();
 
-const handlerFile = (e) => {
-    const fileInfo = e.target.files;
-    //console.log(fileInfo);
-
-    const fileInfoSplit = fileInfo[0].name.split('.');  // 파일명, 확장자 분리
-    const fileExtension = fileInfoSplit[1].toLowerCase();    // 확장자명 가져오기
-    if(fileExtension === 'jpg' || fileExtension === 'gif' || fileExtension === 'png' || fileExtension === 'webp'){
-        //console.log(URL.createObjectURL(fileInfo[0]));
-        imageUrl.value = URL.createObjectURL(fileInfo[0]);
-    }
-    fileData.value = fileInfo[0];
-
-};
-
-// 게시글 상세보기 시 이미지 파일 보이기
-const getFileImage = () => {
-    let param = new URLSearchParams();
-    param.append('noticeSeq', props.idx);   // 파라미터로 시퀀스 넣어주기
-    const postAction = {
-        url: `/api/board/noticeDownload.do`,
-        method: 'POST',
-        data: param,
-        responseType: 'blob',   // 
-    };
-     
-    axios(postAction).then((res) => {
-        //console.log(res);
-        const url = window.URL.createObjectURL(new Blob([res.data]));
-        //console.log(url);
-        imageUrl.value = url;   // v-bind로 img 태그 안에 url 추가
-    })
-    
-};
-
-// 이미지 클릭 시 파일 다운로드
-const fileDownload = () => {
-    let param = new URLSearchParams();
-    param.append('noticeSeq', props.idx);   // 파라미터로 시퀀스 넣어주기
-    const postAction = {
-        url: `/api/board/noticeDownload.do`,
-        method: 'POST',
-        data: param,
-        responseType: 'blob',   // 
-    };
-    axios(postAction).then((res) => {
-        const url = window.URL.createObjectURL(new Blob([res.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', noticeDetail.value.fileName);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();  // 다운로드 후에는 a태그 삭제해서 누수 예방
-    })
-};
-
-onMounted(() => {
-    // console.log(props.idx);
-    // searchDetail();
-    props.idx && searchDetail();    // 신규 등록일 때는 api 호출 X
-});
-
-onUnmounted(() => emit('modalClose'));
 </script>
 
 <style lang="scss" scoped>

@@ -7,5 +7,7 @@
 <script setup>
 const providedValue = ref();
 
+
+// provide('[key]', [value])
 provide('providedValue', providedValue);
 </script>
