@@ -61,6 +61,7 @@ import { useRoute, useRouter } from 'vue-router';
 import Pagination from '../../../common/Pagination.vue';
 import { useModalStore } from '../../../../stores/modalState';
 import { useQuery } from '@tanstack/vue-query';
+import { useNoticeListSearchQuery } from '../../../../hook/notice/useNoticeListSearchQuery';
 
 const route = useRoute();   // NoticeSearch에서 넘겨주는 데이터 받아오기
 const router = useRouter();
@@ -78,30 +79,32 @@ watch(injectedValue, () => {
 });
 
 // 받아온 데이터 서버로 넘기기
-const searchList = async () => {
-    const param = new URLSearchParams({
-        // searchTitle: route.query.searchTitle || '',
-        // searchStDate: route.query.searchStDate || '',
-        // searchEdDate: route.query.searchEdDate || '',
-        ...injectedValue.value,
-        currentPage: currentPage.value,
-        pageSize: 5,
-    });
-    // const result = await axios.post('/api/board/noticeListJson.do', param).then((res) => {
-    //     // noticeList.value = res.data.notice;
-    //     // noticeCnt.value = res.data.noticeCnt;
-    // });
-    const result = await axios.post('/api/board/noticeListJson.do', param);
-    console.log(result.data);
-    return result.data;
-};
+// const searchList = async () => {
+//     const param = new URLSearchParams({
+//         // searchTitle: route.query.searchTitle || '',
+//         // searchStDate: route.query.searchStDate || '',
+//         // searchEdDate: route.query.searchEdDate || '',
+//         ...injectedValue.value,
+//         currentPage: currentPage.value,
+//         pageSize: 5,
+//     });
+//     // const result = await axios.post('/api/board/noticeListJson.do', param).then((res) => {
+//     //     // noticeList.value = res.data.notice;
+//     //     // noticeCnt.value = res.data.noticeCnt;
+//     // });
+//     const result = await axios.post('/api/board/noticeListJson.do', param);
+//     console.log(result.data);
+//     return result.data;
+// };
 
-const { data : noticeList, isLoading, refetch, isSuccess, isError } = useQuery({
-    queryKey: ['noticeList', injectedValue, currentPage],
-    //queryKey: ['noticeList'],
-    queryFn: searchList,
-    staleTime: 60 * 1000,   // 예를 들어 상세보기에서 뒤로가기 눌렀을 때 서버에 굳이 다녀오고 싶지 않다
-});
+// const { data : noticeList, isLoading, refetch, isSuccess, isError } = useQuery({
+//     queryKey: ['noticeList', injectedValue, currentPage],
+//     //queryKey: ['noticeList'],
+//     queryFn: searchList,
+//     staleTime: 60 * 1000,   // 예를 들어 상세보기에서 뒤로가기 눌렀을 때 서버에 굳이 다녀오고 싶지 않다
+// });
+
+const { data: noticeList, isLoading, refetch, isSuccess } = useNoticeListSearchQuery(injectedValue, currentPage);
 
 // const handlerModal = (idx) => {
 //     //modalState.modalState = !modalState.modalState;
