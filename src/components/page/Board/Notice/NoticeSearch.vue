@@ -1,56 +1,24 @@
 <template>
     <div class="search-box">
-        <input v-model.lazy="keyword">
-        <input type="date" v-model="searchStartDate"/>
-        <input type="date" v-model="searchEndDate"/>
-        <button @click="handlerSearch">검색</button>
-        <button @click="handlerModal">신규등록</button>
+        <input v-model="searchKey.searchTitle">
+        <input type="date" v-model="searchKey.searchStartDate"/>
+        <input type="date" v-model="searchKey.searchEndDate"/>
+        <button @click="handlerSearch" >검색</button>
+        <button>신규등록</button>
     </div>
 </template>
 
 
 <script setup>
-import router from '@/router';
-import { watchEffect } from 'vue';
-import { useModalStore } from '../../../../stores/modalState';
+import { inject } from 'vue';
 
-const keyword = ref('');    // 이 값이 변경되면 화면 리렌더링
-const searchStartDate = ref('');
-const searchEndDate = ref('');
-const other = 1;    // 반응형 객체가 아닌 경우~
-
-const modalState = useModalStore();
-
-// // watch - 반응형 객체의 값이 변경되면 이하 함수가 실행된다
-// // 첫번째 인자로는 반응형 객체가 들어가야한다 - 반응형 객체가 아닌 경우에는 함수로 넣어야
-// watch(keyword, () => {
-// //watch(() => other, () => {  // 첫번째 인자를 이렇게 넣어줘야 한다
-//     console.log(keyword.value); // 객체값만 가져오고 싶을 때
-// })
-
-// // 근데 문제점 : 값 변경될때마다 watch가 수행된다 -> 불필요!
-// // v-model.lazy 사용해서 막을 수 있다
+// provide로 선언한 것을 inject을 통해서 받는다
+const injectedValue = inject('providedValue');
+const searchKey = ref({});
 
 const handlerSearch = () => {
-    //alert(keyword.value + searchStartDate.value + searchEndDate.value);
-    const query = [];   // url 파라미터 쿼리
-    !keyword.value || query.push(`searchTitle=${keyword.value}`);
-    !searchStartDate.value || query.push(`searchStDate=${searchStartDate.value}`);
-    !searchEndDate.value || query.push(`searchEdDate=${searchEndDate.value}`);
-    //console.log(query);
-    const queryString = query.length > 0 ? `?${query.join('&')}` : '';
-    //console.log(queryString);
-
-    router.push(queryString);
+    injectedValue.value = { ...searchKey.value };
 };
-
-const handlerModal = () => {
-    modalState.setModalState();
-}
-
-// watchEffect - 인자로 받는 함수 내에 반응형 객체의 값이 변경되면 함수 수행
-// 아래 코드 설명 - ref 같은 반응형 객체는 없다. 새로고침 누르면 최초에 한번 실행되는 코드
-watchEffect(() => window.location.search && router.push(window.location.pathname, { replace : true}))
 </script>
 
 <style lang="scss" scoped>

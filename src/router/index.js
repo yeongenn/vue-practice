@@ -24,6 +24,14 @@ const routes = [
                         path: 'notice.do',
                         name: 'notice',
                         component: Notice,
+                        // children: [
+                        //     {
+                        //         // 중첩라우터
+                        //         path: ':idx',
+                        //         name: 'noticeDetail',
+                        //         component: NoticeDetail,
+                        //     },
+                        // ]
                     }
                 ]
             }

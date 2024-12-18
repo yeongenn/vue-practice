@@ -7,7 +7,7 @@
             @modal-close="() => (noticeIdx = 0)" 
             :idx="noticeIdx"
         />
-        현재 페이지: {{ currentPage }} 총 개수: {{ noticeList?.noticeCnt }}
+        현재 페이지: {{ currentPage }} 총 개수: {{ noticeCnt }}
         <table>
             <colgroup>
                 <col width="10%" />
@@ -25,10 +25,9 @@
                 </tr>
             </thead>
             <tbody>
-                <template v-if="isLoading">...로딩 중</template>
-                <template v-if="isSuccess">
-                    <template v-if="noticeList.noticeCnt > 0">
-                        <tr v-for="notice in noticeList.notice" :key="notice.noticeIdx" @click="handlerDetail(notice.noticeIdx)">
+                <template v-if="noticeList">
+                    <template v-if="noticeCnt > 0">
+                        <tr v-for="notice in noticeList" :key="notice.noticeIdx" @click="handlerModal(notice.noticeIdx)">
                             <td>{{ notice.noticeIdx }}</td>
                             <td>{{ notice.title }}</td>
                             <td>{{ notice.createdDate.substr(0, 10) }}</td>
@@ -44,89 +43,58 @@
             </tbody>
         </table>
         <Pagination
-        :totalItems="noticeList?.noticeCnt || 0"
+        :totalItems="noticeCnt || 0"
         :items-per-page="5"
         :max-pages-shown="5"
         :onClick="searchList"
         v-model="currentPage"></Pagination>
     </div>
-    <router></router>
 </template>
 
 <script setup>
 import axios from 'axios';
-import { inject, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import Pagination from '../../../common/Pagination.vue';
 import { useModalStore } from '../../../../stores/modalState';
-import { useQuery } from '@tanstack/vue-query';
 
 const route = useRoute();   // NoticeSearch에서 넘겨주는 데이터 받아오기
-const router = useRouter();
-//const noticeList = ref();   // 서버로부터 받아온 데이터
-//const noticeCnt = ref(0);
+const noticeList = ref();   // 서버로부터 받아온 데이터
+const noticeCnt = ref(0);
 const currentPage = ref(1);
 //const modalValue = ref(false);  // 
 const modalState = useModalStore();
 const noticeIdx = ref(0);
 
-const injectedValue = inject('providedValue');
-
-watch(injectedValue, () => {
-    console.log(injectedValue.value);
-});
-
 // 받아온 데이터 서버로 넘기기
-const searchList = async () => {
+const searchList = () => {
     const param = new URLSearchParams({
-        // searchTitle: route.query.searchTitle || '',
-        // searchStDate: route.query.searchStDate || '',
-        // searchEdDate: route.query.searchEdDate || '',
-        ...injectedValue.value,
+        searchTitle: route.query.searchTitle || '',
+        searchStDate: route.query.searchStDate || '',
+        searchEdDate: route.query.searchEdDate || '',
         currentPage: currentPage.value,
         pageSize: 5,
     });
-    // const result = await axios.post('/api/board/noticeListJson.do', param).then((res) => {
-    //     // noticeList.value = res.data.notice;
-    //     // noticeCnt.value = res.data.noticeCnt;
-    // });
-    const result = await axios.post('/api/board/noticeListJson.do', param);
-    console.log(result.data);
-    return result.data;
+    axios.post('/api/board/noticeListJson.do', param).then((res) => {
+        noticeList.value = res.data.notice;
+        noticeCnt.value = res.data.noticeCnt;
+    });
 };
 
-const { data : noticeList, isLoading, refetch, isSuccess, isError } = useQuery({
-    queryKey: ['noticeList', injectedValue, currentPage],
-    //queryKey: ['noticeList'],
-    queryFn: searchList,
-});
-
-// const handlerModal = (idx) => {
-//     //modalState.modalState = !modalState.modalState;
-//     console.log(idx);
-//     noticeIdx.value = idx;
-//     modalState.setModalState();
-//     //console.log(modalState.modalState);
-// };
-
-// const handlerDetail = (param) => { // 숫자를 넘겨줄 때는 String 타입으로 변환해서 넘겨야한다
-//     router.push({
-//         name: 'noticeDetail',
-//         params: { idx: param },
-//     }) 
-// };
-
-const handlerDetail = (idx) => {
-    router.push(`${idx}`);
-}
-
+const handlerModal = (idx) => {
+    //modalState.modalState = !modalState.modalState;
+    console.log(idx);
+    noticeIdx.value = idx;
+    modalState.setModalState();
+    //console.log(modalState.modalState);
+};
 
 //watch(route, () => console.log(route.query));
-//watch(route, searchList);
+watch(route, searchList);
 
-// onMounted(() => {
-//     searchList();
-// });
+onMounted(() => {
+    searchList();
+});
 </script>
 
 <style lang="scss" scoped>
