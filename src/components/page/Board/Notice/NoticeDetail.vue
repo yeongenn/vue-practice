@@ -39,6 +39,7 @@ import axios from 'axios';
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserInfo } from '../../../../stores/userInfo';
+import { useNoticeDetailUpdateMutation } from '../../../../hook/notice/useNoticeDetailUpdateMutation';
 
 const { params } = useRoute();
 const detailValue = ref({});
@@ -73,21 +74,8 @@ const apiSuccess = () => {
 
 }
 
-const updateNoticeDetail = async () => {
-    const textData = {
-        ...detailValue.value,
-        context: detailValue.value.content,
-        noticeSeq: params.idx,
-    };
-    //console.log(detailValue.value);
-    await axios.post(`/api/board/noticeUpdateBody.do`, textData);
-};
-
-const { mutate: handlerUpdateBtn} = useMutation({
-    mutationFn: updateNoticeDetail,
-    onSuccess: apiSuccess,
-    mutationKey: ['noticeUpdate'],  // 중복 방지 위해서라도 key 사용 권장
-})
+// update 모듈화
+const { mutate: handlerUpdateBtn } = useNoticeDetailUpdateMutation(detailValue, params.idx);
 
 const insertNoticeDetail = async () => {
     const textData = {
