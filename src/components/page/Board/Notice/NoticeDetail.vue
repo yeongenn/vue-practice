@@ -40,6 +40,9 @@ import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserInfo } from '../../../../stores/userInfo';
 import { useNoticeDetailUpdateMutation } from '../../../../hook/notice/useNoticeDetailUpdateMutation';
+import { useNoticeDetailDeleteMutation } from '../../../../hook/notice/useNoticeDetailDeleteMutation';
+import { useNoticeDetailInsertMutation } from '../../../../hook/notice/useNoticeDetailInsertMutation';
+import { useNoticeDetailQuery } from '../../../../hook/notice/useNoticeDetailQuery';
 
 const { params } = useRoute();
 const detailValue = ref({});
@@ -47,16 +50,8 @@ const router = useRouter();
 const queryClient = useQueryClient();   // 서버 데이터 캐싱 상태를 관리
 const userInfo = useUserInfo();
 
-const searchDetail = async () => {
-    const result = await axios.post(`/api/board/noticeDetailBody.do`, { noticeSeq: params.idx });
-    return result.data;
-};
-
-const { data : noticeDetail, isLoading, isSuccess } = useQuery({
-    queryKey: ['detailList'],
-    queryFn: searchDetail,
-    enabled: !!params.idx,  //  idx가 존재하면 실행되도록
-})
+// 상세보기
+const { data: noticeDetail, isLoading, isSuccess } = useNoticeDetailQuery(params.idx);
 
 watchEffect(() => {
     if(isSuccess.value && noticeDetail.value){
@@ -65,44 +60,14 @@ watchEffect(() => {
     }
 });
 
-const apiSuccess = () => {
-    alert(`post 성공~`);
-    router.go(-1);  //  stack되어있는 history 대상
-    queryClient.invalidateQueries({
-        queryKey: ['noticeList']    // noticeList 쿼리 refetch 해달라는 의미
-    })
-
-}
-
-// update 모듈화
+// update
 const { mutate: handlerUpdateBtn } = useNoticeDetailUpdateMutation(detailValue, params.idx);
 
-const insertNoticeDetail = async () => {
-    const textData = {
-        title: detailValue.value.title,
-        context: detailValue.value.content,
-        loginId: userInfo.user.loginId,
-    };
-    //console.log(detailValue.value);
-    await axios.post(`/api/board/noticeSaveBody.do`, textData);
-};
+// insert
+const { mutate: handlerInsertBtn} = useNoticeDetailInsertMutation(detailValue, userInfo.user.loginId); 
 
-const { mutate: handlerInsertBtn} = useMutation({
-    mutationFn: insertNoticeDetail,
-    onSuccess: apiSuccess,
-    mutationKey: ['noticeInsert'],  // 중복 방지 위해서라도 key 사용 권장
-})
-
-const deleteNoticeDetail = async () => {
-
-    await axios.post(`/api/board/noticeDeleteBody.do`, { noticeSeq: params.idx });
-};
-
-const { mutate: handlerDeleteBtn} = useMutation({
-    mutationFn: deleteNoticeDetail,
-    onSuccess: apiSuccess,
-    mutationKey: ['noticeDelete'],  // 중복 방지 위해서라도 key 사용 권장
-})
+// delete
+const { mutate: handlerDeleteBtn } = useNoticeDetailDeleteMutation(params.idx);
 
 </script>
 
