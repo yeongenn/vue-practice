@@ -4,20 +4,32 @@
         <input type="date" v-model="searchKey.searchStartDate"/>
         <input type="date" v-model="searchKey.searchEndDate"/>
         <button @click="handlerSearch" >검색</button>
-        <button @click="() => $router.push('notice.do/insert')">신규등록</button>
+        <!--<button @click="() => $router.push('notice.do/insert')">신규등록</button>-->
+        <button @click="hadlerNewInsert">신규등록</button>
     </div>
 </template>
 
 
 <script setup>
+import { useQueryClient } from '@tanstack/vue-query';
 import { inject } from 'vue';
+import { useRouter } from 'vue-router';
 
 // provide로 선언한 것을 inject을 통해서 받는다
 const injectedValue = inject('providedValue');
 const searchKey = ref({});
+const queryClient = useQueryClient();
+const router = useRouter();
 
 const handlerSearch = () => {
     injectedValue.value = { ...searchKey.value };
+};
+
+const hadlerNewInsert = () => {
+    queryClient.removeQueries({
+        queryKey: ['noticeDetail'],
+    });
+    router.push('notice.do/insert');
 };
 </script>
 
