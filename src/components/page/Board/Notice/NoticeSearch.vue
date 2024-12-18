@@ -4,7 +4,7 @@
         <input type="date" v-model="searchKey.searchStartDate"/>
         <input type="date" v-model="searchKey.searchEndDate"/>
         <button @click="handlerSearch" >검색</button>
-        <button>신규등록</button>
+        <button @click="() => $router.push('notice.do/insert')">신규등록</button>
     </div>
 </template>
 
